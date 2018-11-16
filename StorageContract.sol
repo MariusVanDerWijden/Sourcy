@@ -23,48 +23,48 @@ contract StorageContract{
 		address provider, 
 		address user, 
 		bytes firstKeyHalfEnc, 
-    	bytes32 firstHalfHash);
+		bytes32 firstHalfHash);
 
-    event Bid_Accepted(
-    	uint256 slot,
-    	address provider,
-    	address user, 
-    	bytes32 secondKeyHalf);
+	event Bid_Accepted(
+		uint256 slot,
+		address provider,
+		address user, 
+		bytes32 secondKeyHalf);
 
-    event Exchange_Finished(
-    	uint256 slot,
-    	address provider,
-    	address user);
+	event Exchange_Finished(
+		uint256 slot,
+		address provider,
+		address user);
 
-    event Exchange_Timeouted(
-    	uint256 slot,
-    	address provider,
-    	address user);
+	event Exchange_Timeouted(
+		uint256 slot,
+		address provider,
+		address user);
 
-    event Exchange_Dispute_Successful(
-    	uint256 slot,
-    	address provider,
-    	address user);
+	event Exchange_Dispute_Successful(
+		uint256 slot,
+		address provider,
+		address user);
 
-    event Exchange_Dispute_Failed(
-    	uint256 slot,
-    	address provider,
-    	address user);
+	event Exchange_Dispute_Failed(
+		uint256 slot,
+		address provider,
+		address user);
 
-    event User_Refunded(
-    	uint256 slot,
-    	address provider,
-    	address user);
+	event User_Refunded(
+		uint256 slot,
+		address provider,
+		address user);
 
-    event Provider_Refunded(
-    	uint256 slot,
-    	address provider);
+	event Provider_Refunded(
+		uint256 slot,
+		address provider);
 
-    event Storage_Closed(uint256 slot);
+	event Storage_Closed(uint256 slot);
 
-    event Selfdestruct();
+	event Selfdestruct();
 
-    //States for the internal state machines
+	//States for the internal state machines
 	enum StorageState {CLOSED, OPEN, REFUND}
 	enum FairExchangeState {CLOSED, PROPOSED, ACCEPTED}
 
@@ -88,20 +88,20 @@ contract StorageContract{
 		uint256 refundOverhead; //temporary variable 
 		//(holds the amount of money each user gets from the staked eth in case of cheating)
 		mapping(address => FairExchange) exchanges; //FairExchanges for this storage cell
-    }
-    
-    //Structure for the fair exchange of data
-    struct FairExchange {
-        address user;
+	}
+	
+	//Structure for the fair exchange of data
+	struct FairExchange {
+		address user;
 		uint256 value; //Amount of eth he wants to pay
 		bytes firstKeyHalfEnc; //the first half of the key, encrypted with the public key of the provider
 		bytes32 firstHalfHash; //the hash of the first half
 		bytes32 secondKeyHalf; //the second half of the key
 		FairExchangeState state;
 		uint256 timeout;
-    }
+	}
 
-    //internal variables used in the contract
+	//internal variables used in the contract
 	mapping(uint256 => Storage) private sources;
 	uint constant maxTimeout = 100 minutes;
 	uint constant maxExchangeTimeout = 30 minutes;
@@ -140,9 +140,9 @@ contract StorageContract{
 
 	//user bids on data and provides encrypted keys for the fair exchange
 	function bidOnSource(
-    	uint256 slot, 
-    	bytes _firstKeyHalfEnc, 
-    	bytes32 _firstHalfHash) public payable
+		uint256 slot, 
+		bytes _firstKeyHalfEnc, 
+		bytes32 _firstHalfHash) public payable
 	{
 		require(sources[slot].state == StorageState.OPEN);
 		require(sources[slot].timeout > now);
@@ -161,7 +161,7 @@ contract StorageContract{
 			sources[slot].provider, 
 			msg.sender, 
 			_firstKeyHalfEnc, 
-    		_firstHalfHash);
+			_firstHalfHash);
 	}
 
 	//provider accepts the bid of the user
@@ -177,10 +177,10 @@ contract StorageContract{
 		sources[slot].exchanges[exchange].state = FairExchangeState.ACCEPTED;
 		sources[slot].exchanges[exchange].timeout = now + maxTimeout;
 		emit Bid_Accepted(
-    		slot,
-    		sources[slot].provider,
-    		exchange, 
-    		_secondKeyHalf);
+			slot,
+			sources[slot].provider,
+			exchange, 
+			_secondKeyHalf);
 	}
 
 	//successful exchange, money is now locked in escrow
@@ -194,9 +194,9 @@ contract StorageContract{
 		sources[slot].userValueSum += sources[slot].exchanges[exchange].value;
 		sources[slot].userCount += 1;
 		emit Exchange_Finished(
-    		slot,
-    		sources[slot].provider,
-    		exchange);
+			slot,
+			sources[slot].provider,
+			exchange);
 	}
 
 	//provider did not accept the exchange
@@ -210,9 +210,9 @@ contract StorageContract{
 		require(sources[slot].exchanges[exchange].user.send(tmp));
 		exchangeCount = exchangeCount - 1;
 		emit Exchange_Timeouted(
-    		slot,
-    		sources[slot].provider,
-    		exchange);
+			slot,
+			sources[slot].provider,
+			exchange);
 	}
 
 	function disputeExchange(uint256 slot, bytes32 firstKeyHalf) public
@@ -220,7 +220,7 @@ contract StorageContract{
 		require(sources[slot].exchanges[msg.sender].state == FairExchangeState.ACCEPTED);
 		require(now < sources[slot].exchanges[msg.sender].timeout);
 		require(keccak256(abi.encodePacked(firstKeyHalf)) 
-		    == sources[slot].exchanges[msg.sender].firstHalfHash);
+			== sources[slot].exchanges[msg.sender].firstHalfHash);
 		bytes32 key = firstKeyHalf ^ sources[slot].exchanges[msg.sender].secondKeyHalf;
 		bool cheated = (keccak256(abi.encodePacked(key)) != sources[slot].hashedKey);
 		if(cheated)
@@ -229,9 +229,9 @@ contract StorageContract{
 			sources[slot].refundOverhead = 
 				sources[slot].userValueSum / sources[slot].providerValue;
 			emit Exchange_Dispute_Successful(
-    			slot,
-    			sources[slot].provider,
-    			msg.sender);
+				slot,
+				sources[slot].provider,
+				msg.sender);
 		}
 		else
 		{
@@ -239,9 +239,9 @@ contract StorageContract{
 			sources[slot].exchanges[msg.sender].value = 0;
 			sources[slot].provider.transfer(tmp);
 			emit Exchange_Dispute_Failed(
-    			slot,
-    			sources[slot].provider,
-    			msg.sender);
+				slot,
+				sources[slot].provider,
+				msg.sender);
 		}
 	}
 
@@ -260,7 +260,7 @@ contract StorageContract{
 	function refundProvider(uint256 slot) public 
 	{
 		require(now > sources[slot].timeout);
-		require(sources[slot].state  == StorageState.OPEN);
+		require(sources[slot].state == StorageState.OPEN);
 		sources[slot].state = StorageState.CLOSED;
 		uint256 tmp = sources[slot].userValueSum;
 		sources[slot].userValueSum = 0;
@@ -272,18 +272,18 @@ contract StorageContract{
 	
 	function closeStorage(uint256 slot) public
 	{
-	    require(now > sources[slot].timeout);
-	    require(sources[slot].userCount == 0);
-	    sources[slot].state = StorageState.CLOSED;
-	    storageCount = storageCount - 1;
-	    emit Storage_Closed(slot);
+		require(now > sources[slot].timeout);
+		require(sources[slot].userCount == 0);
+		sources[slot].state = StorageState.CLOSED;
+		storageCount = storageCount - 1;
+		emit Storage_Closed(slot);
 	}
 	
 	function close() public
 	{
-	    require(msg.sender == owner);
-	    require(storageCount == 0);
-	    emit Selfdestruct();
-	    selfdestruct(owner);
+		require(msg.sender == owner);
+		require(storageCount == 0);
+		emit Selfdestruct();
+		selfdestruct(owner);
 	}
 }
